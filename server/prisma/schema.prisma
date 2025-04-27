@@ -1,0 +1,325 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  termsAccepted Boolean  @default(false)
+  refreshToken  String?
+  phone         String?
+  imgUrl        String?  @default("https://t3.ftcdn.net/jpg/06/33/54/78/360_F_633547842_AugYzexTpMJ9z1YcpTKUBoqBF0CUCk10.jpg")
+  role          UserRole @default(user)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reviews               Review[]
+  passwordResetRequests ForgotPasswordRequest[]
+  addresses             ShippingAddress[]
+  wishlist              Wishlist[]
+  orders                Order[]
+  cart                  Cart?
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+model ForgotPasswordRequest {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otp         String
+  isVerified  Boolean  @default(false)
+  secureToken String?
+  expireAt    DateTime
+  createdAt   DateTime @default(now())
+}
+
+model ShippingAddress {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName          String
+  phone             String
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  pincode           String
+  isDefaultShipping Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  Order             Order[]
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  slug        String  @unique // for seo
+  imageUrl    String?
+
+  parentId Int?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[] @relation("CategoryHierarchy")
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, parentId])
+  @@index([name,slug])
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  name            String
+  brand           String
+  slug            String   @unique  
+  description     String
+  isPublished     Boolean  @default(false)
+  additionalInfo Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  categoryId     Int              
+  category       Category         @relation(fields: [categoryId], references: [id])
+
+  variants       ProductVariant[]
+  reviews        Review[]
+
+  wishlist  Wishlist[]
+  orderItem OrderItem[]
+  productImage  ProductImage[]
+
+  @@index([slug,categoryId,name])
+}
+
+model ProductVariant {
+  id            Int            @id @default(autoincrement()) 
+  price         Float          // in this price people buy
+  listPrice     Float          // MRP
+  discount      Float?         // percentage or amount
+  stockQuantity Int
+  sku           String         @unique
+
+  productId     Int
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  isDefault      Boolean @default(false)   // default variant which shows first
+
+  colorId    Int?     
+  color      Color?    @relation(fields: [colorId],references: [id])
+  sizeId     Int?
+  size       Size?      @relation(fields: [sizeId],references: [id])
+  images     ProductImage[]
+
+  CartItem      CartItem[]
+  orderItem     OrderItem[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Color {
+  id       Int    @id @default(autoincrement())
+  name     String  @unique
+  hexCode  String?
+
+  images   ProductImage[]
+
+  variants     ProductVariant[]
+  @@index([name])
+}
+
+model Size {
+  id    Int   @id  @default(autoincrement())
+  name  String   @unique
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  variants     ProductVariant[]
+  @@index([name])
+}
+
+model ProductImage {
+  id          Int             @id @default(autoincrement())
+  url         String
+  isMainImage Boolean         @default(false)
+ 
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  productId          Int       // every image must related to product 
+  product            Product   @relation(fields: [productId],references: [id],onDelete: Cascade)
+  
+  productVariantId   Int?       // in rare case we use this
+  productVariant     ProductVariant?        @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  colorId  Int?                 // image can be differ by color
+  color   Color?  @relation(fields: [colorId],references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  title     String?
+  comment   String?
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shippingAddressId Int
+  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Cascade)
+
+  orderStatus      OrderStatus     @default(INPROCESS)
+  paymentStatus    PaymentStatus   @default(PENDING)
+  totalAmount      Float
+  items            OrderItem[]
+  stripeCheckoutId String?
+  failureReason    String? // For order fail reason
+  paymentDetails   PaymentDetails?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentDetails {
+  id                    Int      @id @default(autoincrement())
+  stripePaymentIntentId String
+  stripeChargeId        String?
+  amount                Float
+  currency              String
+  paymentMethod         String // e.g., 'card', 'wallet'
+  transactionDate       DateTime @default(now()) // When the payment was processed
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  paymentFailureDetails PaymentFailureDetails?
+
+  @@unique([orderId])
+}
+
+model PaymentFailureDetails {
+  id                    Int      @id @default(autoincrement())
+  stripePaymentIntentId String?
+  failureCode           String?
+  status                String?
+  failureMessage        String?
+  failedAt              DateTime @default(now())
+
+  paymentDetailsId Int
+  paymentDetails   PaymentDetails @relation(fields: [paymentDetailsId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentDetailsId])
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariantId  Int 
+  productVariant   ProductVariant  @relation(fields: [productVariantId],references: [id])
+  quantity  Int
+  priceAtPurchase     Float     // incase price change after purchase
+}
+
+model Cart {
+  id     Int        @id @default(autoincrement())
+  userId Int        @unique
+  user   User       @relation(fields: [userId], references: [id])
+  items  CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id     Int  @id @default(autoincrement())
+  cartId Int
+  cart   Cart @relation(fields: [cartId], references: [id])
+
+  productVariantId Int
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  quantity  Int
+}
+
+model Coupon {
+  id            Int         @id @default(autoincrement())
+  name          String
+  couponCode    String
+  type          CouponTypes
+  discountValue Float
+  minCartValue  Float?
+  isActive      Boolean     @default(false)
+  startDate     DateTime
+  endDate       DateTime
+  usageLimit    Int?
+  usedCount     Int         @default(0)
+  // applicableProducts     for future : on which products copuon valid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([couponCode])
+}
+
+enum CouponTypes {
+  FLAT
+  PERCENTAGE
+  FREE_SHIPPING
+}
+
+enum PaymentStatus {
+  PENDING // Payment is yet to be made
+  COMPLETED // Payment completed successfully
+  FAILED // Payment failed
+  REFUNDED // Payment refunded
+}
+
+enum OrderStatus {
+  FAILED //Order has been failed due to transaction
+  INPROCESS // Order has been placed but not yet confirmed
+  CONFIRMED // Order has been confirmed (inventory check passed, etc.)
+  PACKED // Order has been packed
+  SHIPPED // Order has been shipped
+  OUT_FOR_DELIVERY // Order is out for delivery
+  DELIVERED // Order has been delivered successfully
+  CANCELLED // Order was cancelled by the user or admin
+  RETURNED // Order has been returned by the user
+}
