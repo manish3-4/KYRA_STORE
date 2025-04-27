@@ -49,36 +49,6 @@ Welcome to **KyraStore**, a fully functional e-commerce platform for fashion and
 - **Express.js**
 - **PostgreSQL** (Database)
 - **Prisma** (ORM)
-
-### Deployment:
-
-- **Frontend**: AWS S3 with CloudFront 🌐
-- **Backend**: AWS EC2 with Nginx 🚀
-
----
-
-## 🌐 Live Demo and Video Walkthrough
-
-### 🔗 Live Website
-
-[KyraStore E-Commerce Website](https://kyrastore.dhairyashgupta.com)
-
-### 🎥 Video Demo
-
-[Watch the Full Walkthrough on YouTube](https://www.youtube.com/watch?v=YI0oWEPoTzA)
-
----
-
-## 🚀 Upcoming Features
-
-- **Performance Optimization** ⚡: Integrate **Redis** for better performance.
-- **Email Notifications** 📧:
-  - Order confirmation emails.
-  - Notifications for abandoned carts.
-- **Admin Panel Enhancements** 🛠️:
-  - Manage and create coupon codes.
-  - Set up sales and promotions.
-
 ---
 
 ## 📸 Screenshots
@@ -87,7 +57,7 @@ Here are some glimpses of the KyraStore e-commerce website:
 
 ### 1️⃣ Homepage
 
-## ![KyraStore Homepage](https://kyrastore-ecom.s3.ap-south-1.amazonaws.com/Products/screenshots/homepage.png)
+![KyraStore Homepage](https://kyrastore-ecom.s3.ap-south-1.amazonaws.com/Products/screenshots/homepage.png)
 
 ### 2️⃣ Product Catalogue with Filters
 
@@ -99,7 +69,6 @@ Here are some glimpses of the KyraStore e-commerce website:
 
 - Node.js
 - PostgreSQL
-- AWS account
 
 ### Installation:
 
